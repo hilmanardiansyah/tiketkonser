@@ -3,96 +3,135 @@ require_once __DIR__ . '/../_init.php';
 $u = require_login();
 $pdo = db();
 
+function img_src(?string $url): string {
+  $url = trim((string)$url);
+  if ($url === '') return 'https://via.placeholder.com/800x500?text=Poster';
+  if (preg_match('#^https?://#i', $url)) return $url;
+  if (str_starts_with($url, '/')) return $url;
+  return BASE_URL . '/public/img/' . $url;
+}
+
 $st = $pdo->prepare("
   SELECT
     o.id,
     o.order_code,
     o.status,
     o.order_date,
-    e.title AS event_name,
-    e.poster_url AS poster_url,
-    CONCAT(e.venue, ', ', e.city) AS location
+    MIN(e.title) AS event_name,
+    MIN(e.poster_url) AS poster_url,
+    MIN(e.event_date) AS event_date,
+    MIN(e.venue) AS venue,
+    MIN(e.city) AS city
   FROM orders o
   JOIN order_items oi ON oi.order_id = o.id
   JOIN ticket_types tt ON tt.id = oi.ticket_type_id
   JOIN events e ON e.id = tt.event_id
   WHERE o.user_id = ?
-  GROUP BY o.id
+  GROUP BY o.id, o.order_code, o.status, o.order_date
   ORDER BY o.order_date DESC
   LIMIT 3
 ");
 $st->execute([$u['id']]);
-$last_orders = $st->fetchAll();
+$last_orders = $st->fetchAll(PDO::FETCH_ASSOC);
 
-$recommended = $pdo->query("SELECT * FROM events ORDER BY event_date ASC LIMIT 3")->fetchAll();
+$recommended = $pdo->query("
+  SELECT id, title, poster_url, event_date, venue, city
+  FROM events
+  WHERE status = 'ACTIVE'
+  ORDER BY event_date ASC, id ASC
+  LIMIT 6
+")->fetchAll(PDO::FETCH_ASSOC);
 
 $title = 'Dashboard User - Fesmic';
 require __DIR__ . '/../layout/header.php';
 ?>
 
-<div class="container-fluid">
-  <div class="row">
-    <nav class="col-md-2 d-none d-md-block bg-dark sidebar vh-100 p-3">
-      <h5 class="text-white fw-bold mb-4">FESMIC</h5>
-      <ul class="nav flex-column">
-        <li class="nav-item mb-2">
-          <a class="nav-link text-white active bg-primary rounded" href="dashboard.php">Dashboard</a>
-        </li>
-        <li class="nav-item mb-2">
-          <a class="nav-link text-muted" href="history.php">Riwayat Pesanan</a>
-        </li>
-        <li class="nav-item mt-3">
-          <a class="nav-link text-danger" href="<?= e(BASE_URL . '/views/auth/logout.php') ?>">Logout</a>
-        </li>
-      </ul>
-    </nav>
+<div class="app-shell">
+  <?php require __DIR__ . '/../layout/user_sidebar.php'; ?>
 
-    <main class="col-md-10 ms-sm-auto px-md-4 py-4" style="background-color: #0F0F0F; color: white; min-height: 100vh;">
-      <div class="d-flex justify-content-between align-items-center">
+  <main class="app-main">
+    <div class="app-inner">
+
+      <div class="app-topbar">
         <div>
-          <h2 class="fw-bold">Hello, <?= e($u['name']) ?>!</h2>
-          <p class="text-muted">Cek tiket dan konser terbaru kamu di sini.</p>
+          <h1 class="app-title m-0">Dashboard</h1>
+          <div class="text-white-50 small">Hello, <span class="text-white fw-semibold"><?= e($u['name']) ?></span>!</div>
         </div>
-        <a class="btn btn-outline-light rounded-pill" href="<?= e(BASE_URL . '/views/auth/logout.php') ?>">Logout</a>
+        <div class="app-user">
+          <div class="app-pill"><?= e($u['name']) ?> (USER)</div>
+          <a class="btn btn-outline-light btn-sm rounded-pill" href="<?= e(BASE_URL . '/views/auth/logout.php') ?>">Logout</a>
+        </div>
       </div>
 
-      <div class="mt-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h4 class="fw-bold">Last Orders</h4>
-          <a href="history.php" class="text-primary text-decoration-none small">Lihat Semua</a>
+      <div class="panel p-3 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="fw-semibold text-white">Last Orders</div>
+          <a class="link-primary text-decoration-none small" href="events.php">Lihat Semua</a>
         </div>
-        <div class="row g-4">
-          <?php foreach ($last_orders as $o): ?>
-          <div class="col-md-4">
-            <div class="card bg-dark text-white border-secondary rounded-4 overflow-hidden">
-              <img src="<?= e($o['poster_url']) ?>" class="card-img-top" style="height: 180px; object-fit: cover;">
-              <div class="card-body">
-              <h5 class="fw-bold mb-1"><?= e($o['event_name']) ?></h5>
-              <p class="text-muted small mb-3"><?= e($o['location']) ?></p>
-                <a href="eticket.php?id=<?= $o['id'] ?>" class="btn btn-outline-light btn-sm w-100 rounded-pill">Lihat E-Ticket</a>
+
+        <?php if (!$last_orders): ?>
+          <div class="text-white-50">Belum ada pesanan.</div>
+        <?php else: ?>
+          <div class="row g-3">
+            <?php foreach ($last_orders as $o): ?>
+              <?php
+                $loc = trim((string)($o['venue'] ?? ''));
+                $city = trim((string)($o['city'] ?? ''));
+                $location = trim($loc . ($city !== '' ? ', ' . $city : ''));
+                $location = $location !== '' ? $location : '-';
+              ?>
+              <div class="col-md-4">
+                <div class="event-card">
+                  <div class="event-card__img">
+                    <img src="<?= e(img_src($o['poster_url'] ?? '')) ?>" alt="">
+                  </div>
+                  <div class="event-card__body">
+                    <div class="event-card__title"><?= e($o['event_name'] ?? '-') ?></div>
+                    <div class="event-card__meta"><?= e($location) ?></div>
+                    <a class="btn btn-outline-light btn-sm w-100 rounded-pill mt-3" href="eticket.php?id=<?= (int)$o['id'] ?>">Lihat E-Ticket</a>
+                  </div>
+                </div>
               </div>
-            </div>
+            <?php endforeach; ?>
           </div>
-          <?php endforeach; ?>
-        </div>
+        <?php endif; ?>
       </div>
 
-      <div class="mt-5">
-        <h4 class="fw-bold mb-4">Recommended Event</h4>
-        <div class="row g-4">
-          <?php foreach ($recommended as $ev): ?>
-          <div class="col-md-4">
-            <div class="p-3 bg-dark border border-secondary rounded-4 text-center">
-             <img src="<?= e($ev['poster_url']) ?>" class="rounded-3 w-100 mb-3" style="height: 120px; object-fit: cover;">
-             <h6 class="fw-bold"><?= e($ev['title']) ?></h6>
-              <a href="buy_process.php?event_id=<?= $ev['id'] ?>" class="btn btn-primary btn-sm w-100 mt-2">Beli Tiket</a>
-            </div>
+      <div class="panel p-3">
+        <div class="fw-semibold text-white mb-3">Recommended Event</div>
+
+        <?php if (!$recommended): ?>
+          <div class="text-white-50">Belum ada event aktif.</div>
+        <?php else: ?>
+          <div class="row g-3">
+            <?php foreach ($recommended as $ev): ?>
+              <?php
+                $loc = trim((string)($ev['venue'] ?? ''));
+                $city = trim((string)($ev['city'] ?? ''));
+                $location = trim($loc . ($city !== '' ? ', ' . $city : ''));
+                $location = $location !== '' ? $location : '-';
+                $d = $ev['event_date'] ?? null;
+                $dateTxt = $d ? date('d M Y', strtotime($d)) : '-';
+              ?>
+              <div class="col-md-4">
+                <div class="event-card">
+                  <div class="event-card__img">
+                    <img src="<?= e(img_src($ev['poster_url'] ?? '')) ?>" alt="">
+                  </div>
+                  <div class="event-card__body">
+                    <div class="event-card__title"><?= e($ev['title'] ?? '-') ?></div>
+                    <div class="event-card__meta"><?= e($dateTxt) ?> • <?= e($location) ?></div>
+                    <a class="btn btn-primary btn-sm w-100 rounded-pill mt-3" href="buy_process.php?event_id=<?= (int)$ev['id'] ?>">Beli Tiket</a>
+                  </div>
+                </div>
+              </div>
+            <?php endforeach; ?>
           </div>
-          <?php endforeach; ?>
-        </div>
+        <?php endif; ?>
       </div>
-    </main>
-  </div>
+
+    </div>
+  </main>
 </div>
 
 <?php require __DIR__ . '/../layout/footer.php'; ?>
