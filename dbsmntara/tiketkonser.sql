@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 20, 2026 at 08:39 AM
+-- Generation Time: Jan 26, 2026 at 05:21 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -88,7 +88,13 @@ CREATE TABLE `orders` (
 --
 
 INSERT INTO `orders` (`id`, `user_id`, `order_code`, `order_date`, `status`, `total_amount`, `created_at`, `updated_at`) VALUES
-(2, 1, 'ORD-20260120065631-d82588', '2026-01-20 12:56:31', 'PAID', 300000.00, '2026-01-20 12:56:31', '2026-01-20 12:58:36');
+(2, 1, 'ORD-20260120065631-d82588', '2026-01-20 12:56:31', 'PAID', 300000.00, '2026-01-20 12:56:31', '2026-01-20 12:58:36'),
+(3, 2, 'FES-11FE4B', '2026-01-26 22:59:14', 'PAID', 150000.00, '2026-01-26 22:59:14', '2026-01-26 22:59:14'),
+(4, 2, 'FES-BACC2A', '2026-01-26 23:00:06', 'PAID', 150000.00, '2026-01-26 23:00:06', '2026-01-26 23:00:06'),
+(5, 2, 'FES-401C3F', '2026-01-26 23:01:44', 'PAID', 150000.00, '2026-01-26 23:01:44', '2026-01-26 23:01:44'),
+(6, 2, 'FES-6484FC', '2026-01-26 23:11:43', 'PAID', 150000.00, '2026-01-26 23:11:43', '2026-01-26 23:11:43'),
+(7, 2, 'FES-065292', '2026-01-26 23:12:11', 'PAID', 150000.00, '2026-01-26 23:12:11', '2026-01-26 23:12:11'),
+(8, 2, 'FES-643F67', '2026-01-26 23:13:35', 'PAID', 150000.00, '2026-01-26 23:13:35', '2026-01-26 23:13:35');
 
 -- --------------------------------------------------------
 
@@ -110,7 +116,13 @@ CREATE TABLE `order_items` (
 --
 
 INSERT INTO `order_items` (`id`, `order_id`, `ticket_type_id`, `qty`, `unit_price`, `subtotal`) VALUES
-(1, 2, 1, 2, 150000.00, 300000.00);
+(1, 2, 1, 2, 150000.00, 300000.00),
+(2, 3, 1, 1, 150000.00, 150000.00),
+(3, 4, 1, 1, 150000.00, 150000.00),
+(4, 5, 1, 1, 150000.00, 150000.00),
+(5, 6, 1, 1, 150000.00, 150000.00),
+(6, 7, 1, 1, 150000.00, 150000.00),
+(7, 8, 1, 1, 150000.00, 150000.00);
 
 -- --------------------------------------------------------
 
@@ -157,7 +169,13 @@ CREATE TABLE `tickets` (
 
 INSERT INTO `tickets` (`id`, `order_item_id`, `ticket_code`, `qr_payload`, `attendee_name`, `status`, `checked_in_at`) VALUES
 (1, 1, 'TIX-20260120065836-172fc1d7', '{\"ticket_code\":\"TIX-20260120065836-172fc1d7\",\"order_code\":\"ORD-20260120065631-d82588\"}', NULL, 'ACTIVE', NULL),
-(2, 1, 'TIX-20260120065836-8beac531', '{\"ticket_code\":\"TIX-20260120065836-8beac531\",\"order_code\":\"ORD-20260120065631-d82588\"}', NULL, 'ACTIVE', NULL);
+(2, 1, 'TIX-20260120065836-8beac531', '{\"ticket_code\":\"TIX-20260120065836-8beac531\",\"order_code\":\"ORD-20260120065631-d82588\"}', NULL, 'ACTIVE', NULL),
+(3, 2, 'FES-11FE4B-001', '{\"order_code\":\"FES-11FE4B\",\"ticket_code\":\"FES-11FE4B-001\",\"event_id\":1,\"ticket_type\":\"Regular\"}', 'User 1', 'UNUSED', NULL),
+(4, 3, 'FES-BACC2A-001', '{\"order_code\":\"FES-BACC2A\",\"ticket_code\":\"FES-BACC2A-001\",\"event_id\":1,\"ticket_type\":\"Regular\"}', 'User 1', 'UNUSED', NULL),
+(5, 4, 'FES-401C3F-001', '{\"order_code\":\"FES-401C3F\",\"ticket_code\":\"FES-401C3F-001\",\"event_id\":1,\"ticket_type\":\"Regular\"}', 'User 1', 'UNUSED', NULL),
+(6, 5, 'FES-6484FC-001', '{\"order_code\":\"FES-6484FC\",\"ticket_code\":\"FES-6484FC-001\",\"event_id\":1,\"ticket_type\":\"Regular\"}', 'User 1', 'UNUSED', NULL),
+(7, 6, 'FES-065292-001', '{\"order_code\":\"FES-065292\",\"ticket_code\":\"FES-065292-001\",\"event_id\":1,\"ticket_type\":\"Regular\"}', 'User 1', 'UNUSED', NULL),
+(8, 7, 'FES-643F67-001', '{\"order_code\":\"FES-643F67\",\"ticket_code\":\"FES-643F67-001\",\"event_id\":1,\"ticket_type\":\"Regular\"}', 'User 1', 'UNUSED', NULL);
 
 -- --------------------------------------------------------
 
@@ -183,7 +201,7 @@ CREATE TABLE `ticket_types` (
 --
 
 INSERT INTO `ticket_types` (`id`, `event_id`, `name`, `price`, `quota`, `sold`, `sales_start`, `sales_end`, `created_at`, `updated_at`) VALUES
-(1, 1, 'Regular', 150000.00, 50, 2, '2026-01-20 11:25:26', '2026-01-27 11:25:26', '2026-01-20 11:25:26', '2026-01-20 12:56:31'),
+(1, 1, 'Regular', 150000.00, 50, 8, '2026-01-20 11:25:26', '2026-01-27 11:25:26', '2026-01-20 11:25:26', '2026-01-26 23:13:35'),
 (2, 1, 'VIP', 300000.00, 20, 0, '2026-01-20 11:25:26', '2026-01-27 11:25:26', '2026-01-20 11:25:26', '2026-01-20 11:25:26'),
 (3, 1, 'akdnkawdna', 1200000.00, 20, 0, NULL, NULL, '2026-01-20 14:36:16', '2026-01-20 14:36:16');
 
@@ -298,13 +316,13 @@ ALTER TABLE `event_sessions`
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `payments`
@@ -316,7 +334,7 @@ ALTER TABLE `payments`
 -- AUTO_INCREMENT for table `tickets`
 --
 ALTER TABLE `tickets`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `ticket_types`
