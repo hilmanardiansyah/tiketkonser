@@ -4,16 +4,28 @@ $u = require_login();
 $pdo = db();
 
 $st = $pdo->prepare("
-  SELECT o.id, o.order_code, o.status, o.order_date, e.name as event_name, e.image, e.location
+  SELECT
+    o.id,
+    o.order_code,
+    o.status,
+    o.order_date,
+    e.title AS event_name,
+    e.poster_url AS poster_url,
+    CONCAT(e.venue, ', ', e.city) AS location
   FROM orders o
-  JOIN events e ON o.event_id = e.id
+  JOIN order_items oi ON oi.order_id = o.id
+  JOIN ticket_types tt ON tt.id = oi.ticket_type_id
+  JOIN events e ON e.id = tt.event_id
   WHERE o.user_id = ?
-  ORDER BY o.order_date DESC LIMIT 3
+  GROUP BY o.id
+  ORDER BY o.order_date DESC
+  LIMIT 3
 ");
 $st->execute([$u['id']]);
 $last_orders = $st->fetchAll();
 
-$recommended = $pdo->query("SELECT * FROM events ORDER BY date ASC LIMIT 3")->fetchAll();
+
+$recommended = $pdo->query("SELECT * FROM events ORDER BY event_date ASC LIMIT 3")->fetchAll();
 
 $title = 'Dashboard User - Fesmic';
 require __DIR__ . '/../layout/header.php';
@@ -46,10 +58,10 @@ require __DIR__ . '/../layout/header.php';
           <?php foreach ($last_orders as $o): ?>
           <div class="col-md-4">
             <div class="card bg-dark text-white border-secondary rounded-4 overflow-hidden">
-              <img src="/public/img/<?= e($o['image']) ?>" class="card-img-top" style="height: 180px; object-fit: cover;">
+              <img src="<?= e($o['poster_url']) ?>" class="card-img-top" style="height: 180px; object-fit: cover;">
               <div class="card-body">
-                <h5 class="fw-bold mb-1"><?= e($o['event_name']) ?></h5>
-                <p class="text-muted small mb-3"><?= e($o['location']) ?></p>
+              <h5 class="fw-bold mb-1"><?= e($o['event_name']) ?></h5>
+              <p class="text-muted small mb-3"><?= e($o['location']) ?></p>
                 <a href="eticket.php?id=<?= $o['id'] ?>" class="btn btn-outline-light btn-sm w-100 rounded-pill">Lihat E-Ticket</a>
               </div>
             </div>
@@ -64,8 +76,8 @@ require __DIR__ . '/../layout/header.php';
           <?php foreach ($recommended as $ev): ?>
           <div class="col-md-4">
             <div class="p-3 bg-dark border border-secondary rounded-4 text-center">
-              <img src="/public/img/<?= e($ev['image']) ?>" class="rounded-3 w-100 mb-3" style="height: 120px; object-fit: cover;">
-              <h6 class="fw-bold"><?= e($ev['name']) ?></h6>
+             <img src="<?= e($ev['poster_url']) ?>" class="rounded-3 w-100 mb-3" style="height: 120px; object-fit: cover;">
+             <h6 class="fw-bold"><?= e($ev['title']) ?></h6>
               <a href="buy_process.php?event_id=<?= $ev['id'] ?>" class="btn btn-primary btn-sm w-100 mt-2">Beli Tiket</a>
             </div>
           </div>
