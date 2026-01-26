@@ -3,19 +3,16 @@ require_once __DIR__ . '/../_init.php';
 $admin = require_admin();
 $pdo = db();
 
-if (!isset($_SESSION['flash'])) $_SESSION['flash'] = null;
-$flash = $_SESSION['flash'];
-$_SESSION['flash'] = null;
+$flash = $_SESSION['flash'] ?? null;
+unset($_SESSION['flash']);
 
 function gen_code(string $prefix): string {
   return $prefix . '-' . date('YmdHis') . '-' . bin2hex(random_bytes(4));
 }
 
-// ====== HANDLE ACTIONS (POST) ======
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $action = $_POST['action'] ?? '';
 
-  // EXPIRE / CANCEL
   if ($action === 'expire') {
     $order_id = (int)($_POST['order_id'] ?? 0);
 
@@ -31,7 +28,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
   }
 
-  // CONFIRM PAYMENT (generate payment + tickets + update sold + update order status)
   if ($action === 'confirm') {
     $order_id = (int)($_POST['order_id'] ?? 0);
     $method = trim($_POST['method'] ?? 'transfer');
@@ -39,7 +35,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
       $pdo->beginTransaction();
 
-      // Lock order
       $st = $pdo->prepare("SELECT * FROM orders WHERE id=? FOR UPDATE");
       $st->execute([$order_id]);
       $order = $st->fetch(PDO::FETCH_ASSOC);
@@ -47,7 +42,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if (!$order) throw new Exception("Order tidak ditemukan.");
       if (($order['status'] ?? '') !== 'PENDING') throw new Exception("Order bukan PENDING (status: {$order['status']}).");
 
-      // Items + lock ticket_types
       $st = $pdo->prepare("
         SELECT
           oi.*,
@@ -66,7 +60,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       if (!$items) throw new Exception("Order item kosong.");
 
-      // Re-check quota before confirm
       foreach ($items as $it) {
         $quota = (int)($it['quota'] ?? 0);
         $sold  = (int)($it['sold'] ?? 0);
@@ -76,7 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
       }
 
-      // Create payment (if not exists)
       $st = $pdo->prepare("SELECT COUNT(*) FROM payments WHERE order_id=?");
       $st->execute([$order_id]);
       $payCount = (int)$st->fetchColumn();
@@ -88,26 +80,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           VALUES (?, ?, ?, ?, 'PAID', NOW())
         ");
         $st->execute([$order_id, $method, $payment_ref, $order['total_amount']]);
-      } else {
-        // kalau sudah ada payment record, kita tetap lanjut generate ticket + update status
-        $payment_ref = 'EXISTING';
       }
 
-      // Update order status
       $st = $pdo->prepare("UPDATE orders SET status='PAID', updated_at=NOW() WHERE id=?");
       $st->execute([$order_id]);
 
-      // Update sold + generate tickets
       foreach ($items as $it) {
         $ticket_type_id = (int)$it['ticket_type_id'];
         $qty = (int)$it['qty'];
         $order_item_id = (int)$it['id'];
 
-        // update sold
         $st = $pdo->prepare("UPDATE ticket_types SET sold = sold + ?, updated_at=NOW() WHERE id=?");
         $st->execute([$qty, $ticket_type_id]);
 
-        // generate tickets rows
         for ($i=0; $i < $qty; $i++) {
           $ticket_code = gen_code('TIX');
 
@@ -137,8 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
 }
 
-// ====== FILTERS (GET) ======
-$status = trim($_GET['status'] ?? 'ALL');   // ALL | PENDING | PAID | EXPIRED
+$status = trim($_GET['status'] ?? 'ALL');
 $q = trim($_GET['q'] ?? '');
 
 $where = [];
@@ -159,7 +143,6 @@ if ($q !== '') {
 
 $whereSql = $where ? ("WHERE " . implode(" AND ", $where)) : "";
 
-$orders = [];
 $st = $pdo->prepare("
   SELECT
     o.id, o.order_code, o.status, o.total_amount, o.order_date, o.created_at,
@@ -179,109 +162,114 @@ $orders = $st->fetchAll(PDO::FETCH_ASSOC);
 
 $title = 'Order Management';
 require __DIR__ . '/../layout/header.php';
-require __DIR__ . '/../layout/navbar.php';
 ?>
 
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="m-0">Admin - Order Management</h3>
-    <a class="btn btn-outline-secondary" href="dashboard.php">Kembali</a>
-  </div>
+<div class="app-shell">
+  <?php require __DIR__ . '/../layout/admin_sidebar.php'; ?>
 
-  <?php if ($flash): ?>
-    <div class="alert alert-<?= e($flash['type']) ?>"><?= e($flash['msg']) ?></div>
-  <?php endif; ?>
-
-  <div class="card mb-3">
-    <div class="card-body">
-      <form class="row g-2" method="get">
-        <div class="col-md-3">
-          <label class="form-label">Status</label>
-          <select class="form-select" name="status">
-            <?php foreach (['ALL','PENDING','PAID','EXPIRED'] as $opt): ?>
-              <option value="<?= $opt ?>" <?= $status===$opt?'selected':'' ?>><?= $opt ?></option>
-            <?php endforeach; ?>
-          </select>
+  <main class="app-main">
+    <div class="app-inner">
+      <div class="app-topbar">
+        <h1 class="app-title">Order Management</h1>
+        <div class="app-user">
+          <div class="app-pill"><?= e($admin['name']) ?> (<?= e($admin['role']) ?>)</div>
+          <a class="btn btn-outline-light btn-sm rounded-pill" href="<?= e(BASE_URL . '/views/auth/logout.php') ?>">Logout</a>
         </div>
-        <div class="col-md-7">
-          <label class="form-label">Search</label>
-          <input class="form-control" name="q" value="<?= e($q) ?>" placeholder="order_code / nama / email">
-        </div>
-        <div class="col-md-2 d-grid">
-          <label class="form-label">&nbsp;</label>
-          <button class="btn btn-primary">Filter</button>
-        </div>
-      </form>
-    </div>
-  </div>
+      </div>
 
-  <div class="card">
-    <div class="card-body table-responsive">
-      <table class="table table-striped align-middle">
-        <thead>
-          <tr>
-            <th>Order</th>
-            <th>Customer</th>
-            <th class="text-end">Total</th>
-            <th class="text-end">Qty</th>
-            <th class="text-end">Tickets</th>
-            <th>Status</th>
-            <th>Tanggal</th>
-            <th class="text-end">Aksi</th>
-          </tr>
-        </thead>
-        <tbody>
-        <?php foreach ($orders as $o): ?>
-          <tr>
-            <td class="fw-semibold"><?= e($o['order_code']) ?></td>
-            <td>
-              <div><?= e($o['customer_name']) ?></div>
-              <div class="text-muted small"><?= e($o['customer_email']) ?></div>
-            </td>
-            <td class="text-end">Rp <?= number_format((float)$o['total_amount'], 0, ',', '.') ?></td>
-            <td class="text-end"><?= (int)$o['total_qty'] ?></td>
-            <td class="text-end"><?= (int)$o['tickets_count'] ?></td>
-            <td>
-              <span class="badge
-                <?php
-                  $st = $o['status'];
-                  echo $st==='PAID' ? 'bg-success' : ($st==='PENDING' ? 'bg-warning text-dark' : 'bg-secondary');
-                ?>">
-                <?= e($o['status']) ?>
-              </span>
-            </td>
-            <td><?= e($o['order_date'] ?: $o['created_at']) ?></td>
-            <td class="text-end">
-              <a class="btn btn-sm btn-outline-primary"
-                 href="order_detail.php?order_code=<?= urlencode($o['order_code']) ?>">
-                Detail
-              </a>
+      <?php if ($flash): ?>
+        <div class="alert alert-<?= e($flash['type']) ?> mb-3"><?= e($flash['msg']) ?></div>
+      <?php endif; ?>
 
-              <?php if (($o['status'] ?? '') === 'PENDING'): ?>
-                <form class="d-inline" method="post" onsubmit="return confirm('Konfirmasi pembayaran order ini?');">
-                  <input type="hidden" name="action" value="confirm">
-                  <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
-                  <input type="hidden" name="method" value="transfer">
-                  <button class="btn btn-sm btn-outline-success">Confirm</button>
-                </form>
+      <div class="panel p-3 mb-3">
+        <form class="row g-2" method="get">
+          <div class="col-md-3">
+            <label class="form-label">Status</label>
+            <select class="form-select" name="status">
+              <?php foreach (['ALL','PENDING','PAID','EXPIRED'] as $opt): ?>
+                <option value="<?= e($opt) ?>" <?= $status===$opt?'selected':'' ?>><?= e($opt) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="col-md-7">
+            <label class="form-label">Search</label>
+            <input class="form-control" name="q" value="<?= e($q) ?>" placeholder="order_code / nama / email">
+          </div>
+          <div class="col-md-2 d-grid">
+            <label class="form-label">&nbsp;</label>
+            <button class="btn btn-primary rounded-pill">Filter</button>
+          </div>
+        </form>
+      </div>
 
-                <form class="d-inline" method="post" onsubmit="return confirm('Ubah order ini menjadi EXPIRED?');">
-                  <input type="hidden" name="action" value="expire">
-                  <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
-                  <button class="btn btn-sm btn-outline-danger">Expire</button>
-                </form>
+      <div class="panel p-3">
+        <div class="table-responsive">
+          <table class="table table-dark table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Customer</th>
+                <th class="text-end">Total</th>
+                <th class="text-end">Qty</th>
+                <th class="text-end">Tickets</th>
+                <th style="width:120px;">Status</th>
+                <th style="width:200px;">Tanggal</th>
+                <th class="text-end" style="width:260px;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($orders as $o): ?>
+                <tr>
+                  <td class="fw-semibold"><?= e($o['order_code']) ?></td>
+                  <td>
+                    <div class="fw-semibold"><?= e($o['customer_name']) ?></div>
+                    <div class="text-muted small"><?= e($o['customer_email']) ?></div>
+                  </td>
+                  <td class="text-end">Rp <?= number_format((float)$o['total_amount'], 0, ',', '.') ?></td>
+                  <td class="text-end"><?= (int)$o['total_qty'] ?></td>
+                  <td class="text-end"><?= (int)$o['tickets_count'] ?></td>
+                  <td>
+                    <?php
+                      $stt = $o['status'] ?? '';
+                      $badge = $stt==='PAID' ? 'bg-success' : ($stt==='PENDING' ? 'bg-warning text-dark' : 'bg-secondary');
+                    ?>
+                    <span class="badge <?= e($badge) ?>"><?= e($stt) ?></span>
+                  </td>
+                  <td><?= e($o['order_date'] ?: $o['created_at']) ?></td>
+                  <td class="text-end">
+                    <a class="btn btn-sm btn-outline-light rounded-pill"
+                       href="order_detail.php?order_code=<?= urlencode($o['order_code']) ?>">
+                      Detail
+                    </a>
+
+                    <?php if (($o['status'] ?? '') === 'PENDING'): ?>
+                      <form class="d-inline" method="post" onsubmit="return confirm('Konfirmasi pembayaran order ini?');">
+                        <input type="hidden" name="action" value="confirm">
+                        <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
+                        <input type="hidden" name="method" value="transfer">
+                        <button class="btn btn-sm btn-outline-success rounded-pill">Confirm</button>
+                      </form>
+
+                      <form class="d-inline" method="post" onsubmit="return confirm('Ubah order ini menjadi EXPIRED?');">
+                        <input type="hidden" name="action" value="expire">
+                        <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
+                        <button class="btn btn-sm btn-outline-danger rounded-pill">Expire</button>
+                      </form>
+                    <?php endif; ?>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+
+              <?php if (!$orders): ?>
+                <tr><td colspan="8" class="text-muted">Tidak ada data.</td></tr>
               <?php endif; ?>
-            </td>
-          </tr>
-        <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-        <?php if (!$orders): ?>
-          <tr><td colspan="8" class="text-muted">Tidak ada data.</td></tr>
-        <?php endif; ?>
-        </tbody>
-      </table>
     </div>
-  </div>
+  </main>
 </div>
 
 <?php require __DIR__ . '/../layout/footer.php'; ?>

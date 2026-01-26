@@ -39,32 +39,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $title = 'Login';
 require __DIR__ . '/../layout/header.php';
-require __DIR__ . '/../layout/navbar.php';
 ?>
 
-<div class="container py-5" style="max-width:520px;">
-  <div class="card shadow-sm">
-    <div class="card-body p-4">
-      <h4 class="mb-3">Login</h4>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-head">
+      <h4 class="auth-brand mb-0">Fesmic</h4>
+      <div class="auth-sub">Masuk untuk lanjut beli tiket & akses e-ticket</div>
+    </div>
 
+    <div class="auth-body">
       <?php if ($error): ?>
-        <div class="alert alert-danger"><?= e($error) ?></div>
+        <div class="alert alert-danger mb-3"><?= e($error) ?></div>
       <?php endif; ?>
 
-      <form method="post">
+      <form method="post" autocomplete="on">
         <div class="mb-3">
           <label class="form-label">Email</label>
-          <input class="form-control" name="email" type="email" required>
+          <input class="form-control" name="email" type="email" required placeholder="Email">
         </div>
+
         <div class="mb-3">
           <label class="form-label">Password</label>
-          <input class="form-control" name="password" type="password" required>
+          <input class="form-control" name="password" type="password" required placeholder="Password">
         </div>
-        <button class="btn btn-primary w-100">Masuk</button>
+
+        <button class="btn btn-primary w-100">Login</button>
       </form>
 
-      <div class="text-muted small mt-3">
-        Contoh: admin@test.com / 123456
+      <div class="auth-footer">
+        Belum punya akun?
+        <a class="auth-link" href="<?= e(BASE_URL . '/views/auth/register.php') ?>">Daftar</a>
       </div>
     </div>
   </div>

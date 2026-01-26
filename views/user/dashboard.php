@@ -24,7 +24,6 @@ $st = $pdo->prepare("
 $st->execute([$u['id']]);
 $last_orders = $st->fetchAll();
 
-
 $recommended = $pdo->query("SELECT * FROM events ORDER BY event_date ASC LIMIT 3")->fetchAll();
 
 $title = 'Dashboard User - Fesmic';
@@ -39,15 +38,23 @@ require __DIR__ . '/../layout/header.php';
         <li class="nav-item mb-2">
           <a class="nav-link text-white active bg-primary rounded" href="dashboard.php">Dashboard</a>
         </li>
-        <li class="nav-item">
+        <li class="nav-item mb-2">
           <a class="nav-link text-muted" href="history.php">Riwayat Pesanan</a>
+        </li>
+        <li class="nav-item mt-3">
+          <a class="nav-link text-danger" href="<?= e(BASE_URL . '/views/auth/logout.php') ?>">Logout</a>
         </li>
       </ul>
     </nav>
 
     <main class="col-md-10 ms-sm-auto px-md-4 py-4" style="background-color: #0F0F0F; color: white; min-height: 100vh;">
-      <h2 class="fw-bold">Hello, <?= e($u['name']) ?>!</h2>
-      <p class="text-muted">Cek tiket dan konser terbaru kamu di sini.</p>
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h2 class="fw-bold">Hello, <?= e($u['name']) ?>!</h2>
+          <p class="text-muted">Cek tiket dan konser terbaru kamu di sini.</p>
+        </div>
+        <a class="btn btn-outline-light rounded-pill" href="<?= e(BASE_URL . '/views/auth/logout.php') ?>">Logout</a>
+      </div>
 
       <div class="mt-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
