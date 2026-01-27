@@ -2,6 +2,8 @@
 require_once __DIR__ . '/../_init.php';
 $admin = require_admin();
 $pdo = db();
+$WEB = BASE_URL . '/public';
+
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -24,7 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Gagal expire: ' . $e->getMessage()];
     }
 
-    header('Location: orders.php');
+    header('Location: ' . $WEB . '/admin/orders');
+
     exit;
   }
 
@@ -117,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Gagal confirm: ' . $e->getMessage()];
     }
 
-    header('Location: orders.php');
+    header('Location: ' . $WEB . '/admin/orders');
     exit;
   }
 }
@@ -173,7 +176,7 @@ require __DIR__ . '/../layout/header.php';
         <h1 class="app-title">Order Management</h1>
         <div class="app-user">
           <div class="app-pill"><?= e($admin['name']) ?> (<?= e($admin['role']) ?>)</div>
-          <a class="btn btn-outline-light btn-sm rounded-pill" href="<?= e(BASE_URL . '/views/auth/logout.php') ?>">Logout</a>
+          <a class="btn btn-outline-light btn-sm rounded-pill" href="<?= e($WEB . '/logout') ?>">Logout</a>
         </div>
       </div>
 
@@ -238,7 +241,7 @@ require __DIR__ . '/../layout/header.php';
                   <td><?= e($o['order_date'] ?: $o['created_at']) ?></td>
                   <td class="text-end">
                     <a class="btn btn-sm btn-outline-light rounded-pill"
-                       href="order_detail.php?order_code=<?= urlencode($o['order_code']) ?>">
+                       href="<?= e($WEB . '/admin/orders/detail?order_code=' . urlencode($o['order_code'])) ?>">
                       Detail
                     </a>
 

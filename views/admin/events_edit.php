@@ -3,10 +3,12 @@ require_once __DIR__ . '/../_init.php';
 $u = require_admin();
 $pdo = db();
 
+$WEB = BASE_URL . '/public';
+
 $id = (int)($_GET['id'] ?? 0);
 if ($id <= 0) {
   $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'ID event tidak valid.'];
-  header('Location: events.php');
+  header('Location: ' . $WEB . '/admin/events');
   exit;
 }
 
@@ -16,7 +18,7 @@ $edit = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$edit) {
   $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Event tidak ditemukan.'];
-  header('Location: events.php');
+  header('Location: ' . $WEB . '/admin/events');
   exit;
 }
 
@@ -36,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   if ($title === '' || !$event_date) {
     $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Title dan Event Date wajib diisi.'];
-    header('Location: events_edit.php?id=' . $id);
+    header('Location: ' . $WEB . '/admin/events/edit?id=' . $id);
     exit;
   }
 
@@ -47,12 +49,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       WHERE id = ?
     ");
     $stmt->execute([$title, $description, $venue, $city, $event_date, $start_time, $end_time, $poster_url, $status, $id]);
+
     $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Event berhasil diupdate.'];
-    header('Location: events.php');
+    header('Location: ' . $WEB . '/admin/events');
     exit;
   } catch (Throwable $e) {
     $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Gagal update event: ' . $e->getMessage()];
-    header('Location: events_edit.php?id=' . $id);
+    header('Location: ' . $WEB . '/admin/events/edit?id=' . $id);
     exit;
   }
 }
@@ -70,7 +73,7 @@ require __DIR__ . '/../layout/header.php';
         <h1 class="app-title m-0">Edit Event</h1>
         <div class="app-user">
           <div class="app-pill"><?= e($u['name']) ?> (<?= e($u['role']) ?>)</div>
-          <a class="btn btn-outline-light btn-sm rounded-pill" href="<?= e(BASE_URL . '/views/auth/logout.php') ?>">Logout</a>
+          <a class="btn btn-outline-light btn-sm rounded-pill" href="<?= e($WEB . '/logout') ?>">Logout</a>
         </div>
       </div>
 
@@ -79,7 +82,7 @@ require __DIR__ . '/../layout/header.php';
       <?php endif; ?>
 
       <div class="panel p-3">
-        <form method="post" action="events_edit.php?id=<?= (int)$id ?>">
+        <form method="post" action="<?= e($WEB . '/admin/events/edit?id=' . (int)$id) ?>">
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">Title *</label>
@@ -132,7 +135,7 @@ require __DIR__ . '/../layout/header.php';
 
             <div class="col-12 d-flex gap-2">
               <button class="btn btn-primary rounded-pill px-4" type="submit">Update</button>
-              <a class="btn btn-outline-light rounded-pill px-4" href="events.php">Back</a>
+              <a class="btn btn-outline-light rounded-pill px-4" href="<?= e($WEB . '/admin/events') ?>">Back</a>
             </div>
           </div>
         </form>

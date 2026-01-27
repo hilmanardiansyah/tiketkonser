@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../_init.php';
 $u = require_admin();
 $pdo = db();
+$WEB = BASE_URL . '/public';
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -17,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Throwable $e) {
       $_SESSION['flash'] = ['type' => 'warning', 'msg' => 'Tidak bisa hapus event. Coba ubah status jadi INACTIVE. Detail: ' . $e->getMessage()];
     }
-    header('Location: events.php');
+    header('Location: ' . $WEB . '/admin/events');
     exit;
   }
 }
@@ -43,11 +44,13 @@ require __DIR__ . '/../layout/header.php';
       <div class="app-topbar">
         <div class="d-flex align-items-center gap-2">
           <h1 class="app-title m-0">Event Management</h1>
-          <a class="btn btn-primary btn-sm rounded-pill" href="events_create.php">Create</a>
+          <a class="btn btn-primary btn-sm rounded-pill" href="<?= e($WEB . '/admin/events/create') ?>"
+>Create</a>
         </div>
         <div class="app-user">
           <div class="app-pill"><?= e($u['name']) ?> (<?= e($u['role']) ?>)</div>
-          <a class="btn btn-outline-light btn-sm rounded-pill" href="<?= e(BASE_URL . '/views/auth/logout.php') ?>">Logout</a>
+          <a class="btn btn-outline-light btn-sm rounded-pill" href="<?= e($WEB . '/logout') ?>"
+>Logout</a>
         </div>
       </div>
 
@@ -85,9 +88,9 @@ require __DIR__ . '/../layout/header.php';
                   <td class="text-end"><?= (int)($e['ticket_types_count'] ?? 0) ?></td>
                   <td class="text-end"><?= (int)($e['sold_total'] ?? 0) ?></td>
                   <td class="text-end">
-                    <a class="btn btn-sm btn-outline-light rounded-pill" href="events_edit.php?id=<?= (int)$e['id'] ?>">Edit</a>
-                    <a class="btn btn-sm btn-outline-primary rounded-pill" href="tickets.php?event_id=<?= (int)$e['id'] ?>">Tickets</a>
-                    <form method="post" action="events.php" class="d-inline" onsubmit="return confirm('Yakin hapus event ini?');">
+                    <a class="btn btn-sm btn-outline-light rounded-pill" href="<?= e($WEB . '/admin/events/edit?id=' . (int)$e['id']) ?>">Edit</a>
+                    <a class="btn btn-sm btn-outline-primary rounded-pill" href="<?= e($WEB . '/admin/tickets?event_id=' . (int)$e['id']) ?>">Tickets</a>
+                    <form method="post" action="<?= e($WEB . '/admin/events') ?>" class="d-inline" onsubmit="return confirm('Yakin hapus event ini?');">
                       <input type="hidden" name="action" value="delete">
                       <input type="hidden" name="id" value="<?= (int)$e['id'] ?>">
                       <button class="btn btn-sm btn-outline-danger rounded-pill" type="submit">Delete</button>

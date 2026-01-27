@@ -2,8 +2,7 @@
 require_once __DIR__ . '/../_init.php';
 
 if (current_user()) {
-  $u = current_user();
-  header('Location: ' . BASE_URL . '/views/' . (($u['role'] ?? '') === 'ADMIN' ? 'admin/dashboard.php' : 'user/dashboard.php'));
+  header('Location: ' . BASE_URL . '/public/dashboard');
   exit;
 }
 
@@ -31,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'role' => $user['role'],
       ];
 
-      header('Location: ' . BASE_URL . '/views/' . ($user['role'] === 'ADMIN' ? 'admin/dashboard.php' : 'user/dashboard.php'));
+      header('Location: ' . BASE_URL . '/public/dashboard');
       exit;
     }
   }
@@ -53,10 +52,10 @@ require __DIR__ . '/../layout/header.php';
         <div class="alert alert-danger mb-3"><?= e($error) ?></div>
       <?php endif; ?>
 
-      <form method="post" autocomplete="on">
+      <form method="post" autocomplete="on" action="<?= e(BASE_URL . '/public/login') ?>">
         <div class="mb-3">
           <label class="form-label">Email</label>
-          <input class="form-control" name="email" type="email" required placeholder="Email">
+          <input class="form-control" name="email" type="email" required placeholder="Email" value="<?= e($_POST['email'] ?? '') ?>">
         </div>
 
         <div class="mb-3">

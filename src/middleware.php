@@ -1,7 +1,6 @@
 <?php
 
 function require_auth(): array {
-  // Ambil header Authorization (XAMPP kadang taro di HTTP_AUTHORIZATION / REDIRECT_HTTP_AUTHORIZATION)
   $auth = $_SERVER['HTTP_AUTHORIZATION']
     ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
     ?? (function_exists('getallheaders') ? (getallheaders()['Authorization'] ?? '') : '');
@@ -24,4 +23,32 @@ function require_auth(): array {
   }
 
   return $user;
+}
+
+function require_login(): array {
+  if (!isset($_SESSION)) {
+    return [];
+  }
+
+  $u = $_SESSION['user'] ?? null;
+
+  if (!$u) {
+    header('Location: ' . BASE_URL . '/public/login');
+    exit;
+  }
+
+  return $u;
+}
+
+function require_admin(): array {
+  $u = require_login();
+  $role = strtoupper((string)($u['role'] ?? 'USER'));
+
+  if ($role !== 'ADMIN') {
+    http_response_code(403);
+    echo "403 - Forbidden";
+    exit;
+  }
+
+  return $u;
 }

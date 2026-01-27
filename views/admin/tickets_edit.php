@@ -3,6 +3,8 @@ require_once __DIR__ . '/../_init.php';
 $u = require_admin();
 $pdo = db();
 
+$WEB = BASE_URL . '/public';
+
 function dt_local_to_mysql(?string $s): ?string {
   if (!$s) return null;
   $s = str_replace('T', ' ', $s);
@@ -23,7 +25,7 @@ $id = (int)($_GET['id'] ?? ($_POST['id'] ?? 0));
 
 if ($eventId <= 0 || $id <= 0) {
   $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Parameter tidak valid.'];
-  header('Location: tickets.php');
+  header('Location: ' . $WEB . '/admin/tickets');
   exit;
 }
 
@@ -33,7 +35,7 @@ $event = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$event) {
   $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Event tidak ditemukan.'];
-  header('Location: tickets.php');
+  header('Location: ' . $WEB . '/admin/tickets');
   exit;
 }
 
@@ -43,7 +45,7 @@ $edit = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$edit) {
   $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Ticket type tidak ditemukan.'];
-  header('Location: tickets.php?event_id=' . $eventId);
+  header('Location: ' . $WEB . '/admin/tickets?event_id=' . $eventId);
   exit;
 }
 
@@ -56,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   if ($name === '' || $price <= 0 || $quota <= 0) {
     $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Name, price, quota wajib valid.'];
-    header('Location: tickets_edit.php?event_id=' . $eventId . '&id=' . $id);
+    header('Location: ' . $WEB . '/admin/tickets/edit?event_id=' . $eventId . '&id=' . $id);
     exit;
   }
 
@@ -67,12 +69,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       WHERE id = ? AND event_id = ?
     ");
     $stmt->execute([$name, $price, $quota, $sales_start, $sales_end, $id, $eventId]);
+
     $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Ticket type berhasil diupdate.'];
-    header('Location: tickets.php?event_id=' . $eventId);
+    header('Location: ' . $WEB . '/admin/tickets?event_id=' . $eventId);
     exit;
   } catch (Throwable $e) {
     $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Gagal update ticket type: ' . $e->getMessage()];
-    header('Location: tickets_edit.php?event_id=' . $eventId . '&id=' . $id);
+    header('Location: ' . $WEB . '/admin/tickets/edit?event_id=' . $eventId . '&id=' . $id);
     exit;
   }
 }
@@ -90,7 +93,7 @@ require __DIR__ . '/../layout/header.php';
         <h1 class="app-title m-0">Edit Ticket Type</h1>
         <div class="app-user">
           <div class="app-pill"><?= e($u['name']) ?> (<?= e($u['role']) ?>)</div>
-          <a class="btn btn-outline-light btn-sm rounded-pill" href="<?= e(BASE_URL . '/views/auth/logout.php') ?>">Logout</a>
+          <a class="btn btn-outline-light btn-sm rounded-pill" href="<?= e($WEB . '/logout') ?>">Logout</a>
         </div>
       </div>
 
@@ -103,7 +106,7 @@ require __DIR__ . '/../layout/header.php';
       </div>
 
       <div class="panel p-3">
-        <form method="post" action="tickets_edit.php?event_id=<?= (int)$eventId ?>&id=<?= (int)$id ?>">
+        <form method="post" action="<?= e($WEB . '/admin/tickets/edit?event_id=' . (int)$eventId . '&id=' . (int)$id) ?>">
           <input type="hidden" name="event_id" value="<?= (int)$eventId ?>">
           <input type="hidden" name="id" value="<?= (int)$id ?>">
 
@@ -135,7 +138,7 @@ require __DIR__ . '/../layout/header.php';
 
             <div class="col-12 d-flex gap-2">
               <button class="btn btn-primary rounded-pill px-4" type="submit">Update</button>
-              <a class="btn btn-outline-light rounded-pill px-4" href="tickets.php?event_id=<?= (int)$eventId ?>">Back</a>
+              <a class="btn btn-outline-light rounded-pill px-4" href="<?= e($WEB . '/admin/tickets?event_id=' . (int)$eventId) ?>">Back</a>
             </div>
           </div>
         </form>

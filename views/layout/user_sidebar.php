@@ -1,20 +1,24 @@
 <?php
-$script = basename($_SERVER['SCRIPT_NAME'] ?? '');
-function user_nav_active(string $file, string $script): string { return $script === $file ? 'active' : ''; }
+$WEB = BASE_URL . '/public';
+$uri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
+
+function u_active(string $uri, string $end): string {
+  return str_ends_with($uri, $end) ? 'active' : '';
+}
 ?>
 <aside class="app-sidebar d-flex flex-column">
-  <a class="app-brand" href="dashboard.php">
+  <a class="app-brand" href="<?= e($WEB . '/dashboard') ?>">
     <span class="app-dot"></span>
     <span>Fesmic</span>
   </a>
 
   <div class="app-nav d-flex flex-column gap-1">
-    <a class="<?= e(user_nav_active('dashboard.php', $script)) ?>" href="dashboard.php">Dashboard</a>
-    <a class="<?= e(user_nav_active('history.php', $script)) ?>" href="history.php">Order History</a>
-    <a class="<?= e(user_nav_active('eticket.php', $script)) ?>" href="eticket.php">E-Ticket</a>
+    <a class="<?= e(u_active($uri, '/dashboard')) ?>" href="<?= e($WEB . '/dashboard') ?>">Dashboard</a>
+    <a class="<?= e(u_active($uri, '/history')) ?>" href="<?= e($WEB . '/history') ?>">Order History</a>
+    <a class="<?= e(u_active($uri, '/eticket')) ?>" href="<?= e($WEB . '/eticket') ?>">E-Ticket</a>
   </div>
 
   <div class="app-sidebar-footer">
-    <a class="app-logout" href="<?= e(BASE_URL . '/views/auth/logout.php') ?>">Logout</a>
+    <a class="app-logout" href="<?= e($WEB . '/logout') ?>">Logout</a>
   </div>
 </aside>

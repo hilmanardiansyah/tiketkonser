@@ -3,6 +3,8 @@ require_once __DIR__ . '/../_init.php';
 $admin = require_admin();
 $pdo = db();
 
+$WEB = BASE_URL . '/public';
+
 $order_code = trim($_GET['order_code'] ?? '');
 if ($order_code === '') {
   http_response_code(404);
@@ -16,7 +18,7 @@ if ($order_code === '') {
           <div class="text-white fw-semibold mb-1">Not Found</div>
           <div class="text-white-50">order_code tidak ada.</div>
           <div class="mt-3">
-            <a class="btn btn-outline-light btn-sm rounded-pill" href="orders.php">Back</a>
+            <a class="btn btn-outline-light btn-sm rounded-pill" href="<?= e($WEB . '/admin/orders') ?>">Back</a>
           </div>
         </div>
       </div>
@@ -50,9 +52,11 @@ if (!$order) {
       <div class="app-inner">
         <div class="panel p-3">
           <div class="text-white fw-semibold mb-1">Not Found</div>
-          <div class="text-white-50">Order dengan kode <span class="text-white"><?= e($order_code) ?></span> tidak ditemukan.</div>
+          <div class="text-white-50">
+            Order dengan kode <span class="text-white"><?= e($order_code) ?></span> tidak ditemukan.
+          </div>
           <div class="mt-3">
-            <a class="btn btn-outline-light btn-sm rounded-pill" href="orders.php">Back</a>
+            <a class="btn btn-outline-light btn-sm rounded-pill" href="<?= e($WEB . '/admin/orders') ?>">Back</a>
           </div>
         </div>
       </div>
@@ -110,7 +114,9 @@ $payment = $st->fetch(PDO::FETCH_ASSOC);
 $total_qty = 0;
 foreach ($items as $it) $total_qty += (int)($it['qty'] ?? 0);
 
-$badge = ($order['status'] ?? '') === 'PAID' ? 'bg-success' : (($order['status'] ?? '') === 'PENDING' ? 'bg-warning text-dark' : 'bg-secondary');
+$badge = ($order['status'] ?? '') === 'PAID'
+  ? 'bg-success'
+  : (($order['status'] ?? '') === 'PENDING' ? 'bg-warning text-dark' : 'bg-secondary');
 
 $title = 'Order Detail';
 require __DIR__ . '/../layout/header.php';
@@ -125,7 +131,7 @@ require __DIR__ . '/../layout/header.php';
         <h1 class="app-title">Order Detail</h1>
         <div class="app-user">
           <div class="app-pill"><?= e($admin['name']) ?> (<?= e($admin['role']) ?>)</div>
-          <a class="btn btn-outline-light btn-sm rounded-pill" href="<?= e(BASE_URL . '/views/auth/logout.php') ?>">Logout</a>
+          <a class="btn btn-outline-light btn-sm rounded-pill" href="<?= e($WEB . '/logout') ?>">Logout</a>
         </div>
       </div>
 
@@ -182,7 +188,7 @@ require __DIR__ . '/../layout/header.php';
             <?php endif; ?>
 
             <div class="mt-3">
-              <a class="btn btn-outline-light btn-sm rounded-pill" href="orders.php">Back</a>
+              <a class="btn btn-outline-light btn-sm rounded-pill" href="<?= e($WEB . '/admin/orders') ?>">Back</a>
             </div>
           </div>
         </div>

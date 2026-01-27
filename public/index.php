@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
 
 require_once __DIR__ . '/../src/db.php';
 require_once __DIR__ . '/../src/helpers.php';
@@ -15,11 +17,17 @@ use Controllers\EventController;
 use Controllers\OrderController;
 use Controllers\PaymentController;
 
-$method = $_SERVER['REQUEST_METHOD'];
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$uriPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
+$scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
 
-$uriPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$scriptName = $_SERVER['SCRIPT_NAME'];
-
+/**
+ * Hitung path request relatif terhadap /public
+ * Contoh:
+ *   REQUEST_URI: /tiketkonser/public/history
+ *   SCRIPT_NAME: /tiketkonser/public/index.php
+ *   => path: /history
+ */
 if (strpos($uriPath, $scriptName) === 0) {
   $path = substr($uriPath, strlen($scriptName));
 } else {
@@ -34,10 +42,14 @@ if (strpos($uriPath, $scriptName) === 0) {
 if ($path === '') $path = '/';
 if ($path !== '/') $path = rtrim($path, '/');
 
-// helper render view
-function render($view, $data = []) {
+function render(string $view, array $data = []): void {
   extract($data);
   require __DIR__ . '/../views/' . $view . '.php';
+  exit;
+}
+
+function redirect_to(string $to): void {
+  header('Location: ' . $to);
   exit;
 }
 
@@ -45,7 +57,7 @@ $isApi = (strpos($path, '/api') === 0);
 
 try {
   // =========================
-  // 1) ROUTER API (JSON)
+  // API ROUTES
   // =========================
   if ($isApi) {
     header('Content-Type: application/json; charset=utf-8');
@@ -71,7 +83,7 @@ try {
     }
 
     if ($method === 'POST' && $path === '/api/orders') {
-      require_auth(); // wajib login (API)
+      require_auth();
       (new OrderController())->create();
       exit;
     }
@@ -99,47 +111,126 @@ try {
   }
 
   // =========================
-  // 2) ROUTER WEB (HTML)
+  // WEB ROUTES
   // =========================
   header('Content-Type: text/html; charset=utf-8');
 
-  // landing page default
+  // --- Compatibility: kalau masih ada link user lama
+  if ($method === 'GET' && $path === '/history.php') {
+    redirect_to(BASE_URL . '/public/history');
+  }
+  if ($method === 'GET' && $path === '/eticket.php') {
+    $qs = $_SERVER['QUERY_STRING'] ?? '';
+    redirect_to(BASE_URL . '/public/eticket' . ($qs ? ('?' . $qs) : ''));
+  }
+  if ($method === 'GET' && $path === '/events.php') {
+    redirect_to(BASE_URL . '/public/events');
+  }
+
+  // =========================
+  // PUBLIC PAGES
+  // =========================
   if ($method === 'GET' && $path === '/') {
-    render('public/landing'); // buat: views/public/landing.php
+    render('public/landing');
   }
 
-  // all events
   if ($method === 'GET' && $path === '/events') {
-    render('public/events'); // buat: views/public/events.php
+    render('public/events');
   }
 
-  // event detail
   if ($method === 'GET' && preg_match('#^/events/(\d+)$#', $path, $m)) {
     render('public/event_detail', ['event_id' => (int)$m[1]]);
   }
 
-  // login page (UI)
+  // =========================
+  // AUTH
+  // =========================
   if ($method === 'GET' && $path === '/login') {
-    render('auth/login'); // kamu sudah punya: views/auth/login.php
+    render('auth/login');
   }
 
-  // logout (opsional)
+  if ($method === 'POST' && $path === '/login') {
+    render('auth/login');
+  }
+
   if ($method === 'GET' && $path === '/logout') {
     session_destroy();
-    header("Location: " . BASE_URL . "/public/");
-    exit;
+    redirect_to(BASE_URL . '/public/');
   }
 
-  // dashboard (sudah kamu buat)
+  // =========================
+  // DASHBOARD (ADMIN/USER)
+  // =========================
   if ($method === 'GET' && $path === '/dashboard') {
-    // sesuaikan kunci sessionmu ya:
-    $role = $_SESSION['user']['role'] ?? 'user';
-
-    if ($role === 'admin') render('admin/dashboard');
+    $u = require_login();
+    $role = strtoupper((string)($u['role'] ?? 'USER'));
+    if ($role === 'ADMIN') render('admin/dashboard');
     render('user/dashboard');
   }
 
-  // 404 web
+  // =========================
+  // USER ROUTES
+  // =========================
+  if ($method === 'GET' && $path === '/history') {
+    require_login();
+    render('user/history');
+  }
+
+  if ($method === 'GET' && $path === '/eticket') {
+    require_login();
+    $orderId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    render('user/eticket', ['order_id' => $orderId]);
+  }
+
+  // =========================
+  // ADMIN ROUTES (NEW + COMPAT .php)
+  // =========================
+  // LIST pages (support POST because there are forms)
+  if (($method === 'GET' || $method === 'POST') && ($path === '/admin/events' || $path === '/admin/events.php')) {
+    require_admin();
+    render('admin/events'); // views/admin/events.php
+  }
+
+  if (($method === 'GET' || $method === 'POST') && ($path === '/admin/tickets' || $path === '/admin/tickets.php')) {
+    require_admin();
+    render('admin/tickets'); // views/admin/tickets.php
+  }
+
+  if (($method === 'GET' || $method === 'POST') && ($path === '/admin/orders' || $path === '/admin/orders.php')) {
+    require_admin();
+    render('admin/orders'); // views/admin/orders.php
+  }
+
+  // CREATE/EDIT pages (support POST too)
+  if (($method === 'GET' || $method === 'POST') && ($path === '/admin/events/create' || $path === '/admin/events_create.php')) {
+    require_admin();
+    render('admin/events_create'); // views/admin/events_create.php
+  }
+
+  if (($method === 'GET' || $method === 'POST') && ($path === '/admin/events/edit' || $path === '/admin/events_edit.php')) {
+    require_admin();
+    render('admin/events_edit'); // views/admin/events_edit.php
+  }
+
+  if (($method === 'GET' || $method === 'POST') && ($path === '/admin/tickets/create' || $path === '/admin/tickets_create.php')) {
+    require_admin();
+    render('admin/tickets_create'); // views/admin/tickets_create.php
+  }
+
+  if (($method === 'GET' || $method === 'POST') && ($path === '/admin/tickets/edit' || $path === '/admin/tickets_edit.php')) {
+    require_admin();
+    render('admin/tickets_edit'); // views/admin/tickets_edit.php
+  }
+
+  // ORDER DETAIL (biasanya GET, tapi amanin kalau POST juga)
+  if (($method === 'GET' || $method === 'POST') && ($path === '/admin/orders/detail' || $path === '/admin/order_detail.php')) {
+    require_admin();
+    render('admin/order_detail'); // views/admin/order_detail.php
+  }
+
+  // =========================
+  // 404
+  // =========================
   http_response_code(404);
   echo "404 - Page not found";
 } catch (Throwable $e) {

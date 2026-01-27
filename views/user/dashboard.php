@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../_init.php';
+
 $u = require_login();
 $pdo = db();
 
@@ -66,7 +66,8 @@ require __DIR__ . '/../layout/header.php';
       <div class="panel p-3 mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <div class="fw-semibold text-white">Last Orders</div>
-          <a class="link-primary text-decoration-none small" href="events.php">Lihat Semua</a>
+         <a class="link-primary text-decoration-none small" href="<?= e(BASE_URL . '/public/events') ?>">Lihat Semua</a>
+
         </div>
 
         <?php if (!$last_orders): ?>

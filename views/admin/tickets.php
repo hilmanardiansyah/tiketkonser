@@ -2,6 +2,8 @@
 require_once __DIR__ . '/../_init.php';
 $u = require_admin();
 $pdo = db();
+$WEB = BASE_URL . '/public';
+
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -46,8 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Throwable $e) {
       $_SESSION['flash'] = ['type' => 'warning', 'msg' => 'Tidak bisa hapus ticket type. Detail: ' . $e->getMessage()];
     }
-    header('Location: tickets.php?event_id=' . $event_id);
-    exit;
+    header('Location: ' . $WEB . '/admin/tickets?event_id=' . $event_id);    exit;
   }
 }
 
@@ -71,7 +72,7 @@ require __DIR__ . '/../layout/header.php';
       <div class="app-topbar">
         <div class="d-flex align-items-center gap-2">
           <h1 class="app-title m-0">Ticket Management</h1>
-          <a class="btn btn-primary btn-sm rounded-pill" href="tickets_create.php?event_id=<?= (int)$eventId ?>">Create</a>
+          <a class="btn btn-primary btn-sm rounded-pill" href="<?= e($WEB . '/admin/tickets/create?event_id=' . (int)$eventId) ?>">Create</a>
         </div>
         <div class="app-user">
           <div class="app-pill"><?= e($u['name']) ?> (<?= e($u['role']) ?>)</div>
@@ -84,7 +85,7 @@ require __DIR__ . '/../layout/header.php';
       <?php endif; ?>
 
       <div class="panel p-3 mb-3">
-        <form method="get" action="tickets.php" class="row g-2 align-items-end">
+        <form method="get" action="<?= e($WEB . '/admin/tickets') ?>" class="row g-2 align-items-end">
           <div class="col-md-8">
             <label class="form-label">Event</label>
             <select class="form-select" name="event_id" onchange="this.form.submit()">
@@ -127,8 +128,8 @@ require __DIR__ . '/../layout/header.php';
                   <td><?= e($t['sales_start'] ?? '-') ?></td>
                   <td><?= e($t['sales_end'] ?? '-') ?></td>
                   <td class="text-end">
-                    <a class="btn btn-sm btn-outline-light rounded-pill" href="tickets_edit.php?event_id=<?= (int)$eventId ?>&id=<?= (int)$t['id'] ?>">Edit</a>
-                    <form method="post" action="tickets.php?event_id=<?= (int)$eventId ?>" class="d-inline" onsubmit="return confirm('Yakin hapus ticket type ini?');">
+                    <a class="btn btn-sm btn-outline-light rounded-pill" href="<?= e($WEB . '/admin/tickets/edit?event_id=' . (int)$eventId . '&id=' . (int)$t['id']) ?>">Edit</a>
+                    <form method="post" action="<?= e($WEB . '/admin/tickets?event_id=' . (int)$eventId) ?>" class="d-inline" onsubmit="return confirm('Yakin hapus ticket type ini?');">
                       <input type="hidden" name="action" value="delete">
                       <input type="hidden" name="event_id" value="<?= (int)$eventId ?>">
                       <input type="hidden" name="id" value="<?= (int)$t['id'] ?>">
