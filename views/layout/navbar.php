@@ -1,48 +1,45 @@
 <?php
 $u = current_user();
-$isAdmin = $u && (($u['role'] ?? '') === 'ADMIN');
-?>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
-    <a class="navbar-brand"
-       href="<?= BASE_URL ?>/views/<?= $isAdmin ? 'admin/dashboard.php' : 'user/dashboard.php' ?>">
-      TiketKonser
-    </a>
+$isAdmin = $u && (strtoupper($u['role'] ?? '') === 'ADMIN');
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topnav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
+if (!empty($hideNavbar)) return;
+
+$WEB = BASE_URL . '/public';
+?>
+<nav class="navbar navbar-expand-lg navbar-dark nav-float">
+  <div class="nav-card">
+    <div class="d-flex align-items-center justify-content-between">
+      <a class="navbar-brand d-flex align-items-center gap-2 m-0" href="<?= $WEB ?>/">
+        <span class="app-dot"></span>
+        TiketKonser
+      </a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topnav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+    </div>
 
     <div class="collapse navbar-collapse" id="topnav">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link" href="<?= $WEB ?>/events">All Event</a>
+        </li>
+
         <?php if ($u): ?>
-          <?php if ($isAdmin): ?>
-            <li class="nav-item">
-              <a class="nav-link" href="<?= BASE_URL ?>/views/admin/dashboard.php">Dashboard</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="<?= BASE_URL ?>/views/admin/events.php">Events</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="<?= BASE_URL ?>/views/admin/tickets.php">Tickets</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="<?= BASE_URL ?>/views/admin/orders.php">Orders</a>
-            </li>
-          <?php else: ?>
-            <li class="nav-item">
-              <a class="nav-link" href="<?= BASE_URL ?>/views/user/dashboard.php">Dashboard</a>
-            </li>
-          <?php endif; ?>
+          <li class="nav-item">
+            <a class="nav-link" href="<?= $WEB ?>/dashboard">Dashboard</a>
+          </li>
         <?php endif; ?>
       </ul>
 
-      <div class="d-flex gap-2">
+      <div class="d-flex gap-2 align-items-center">
         <?php if ($u): ?>
-          <span class="navbar-text text-white-50">
+          <span class="navbar-text text-white-50 d-none d-lg-inline">
             <?= e($u['name']) ?> (<?= e($u['role']) ?>)
           </span>
-          <a class="btn btn-outline-light btn-sm" href="<?= BASE_URL ?>/views/auth/logout.php">Logout</a>
+          <a class="btn btn-outline-light btn-sm" href="<?= $WEB ?>/logout">Logout</a>
+        <?php else: ?>
+          <a class="btn btn-outline-light btn-sm" href="<?= $WEB ?>/login">Login</a>
         <?php endif; ?>
       </div>
     </div>
