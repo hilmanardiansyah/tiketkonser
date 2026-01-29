@@ -4,7 +4,7 @@ namespace Controllers;
 class EventController {
   public function index(): void {
     $pdo = \db();
-    $stmt = $pdo->query("SELECT id, title, venue, city, event_date, start_time, end_time, status FROM events ORDER BY created_at DESC");
+    $stmt = $pdo->query("SELECT id, title, venue, city, event_date, start_time, end_time, status, poster_url, poster_file FROM events ORDER BY created_at DESC");
     $rows = $stmt->fetchAll();
     \json_response($rows);
   }

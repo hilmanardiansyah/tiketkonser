@@ -112,7 +112,7 @@ if ($pdoConn instanceof PDO) {
             $city = $ev['city'] ?? '';
             $venue = $ev['venue'] ?? '';
             $date = dt_text($ev['event_date'] ?? '', $ev['start_time'] ?? '');
-            $poster = $ev['poster_url'] ?? '';
+            $poster = $ev['poster_file'] ?? $ev['poster_url'] ?? '';
             $minp = $ev['min_price'] ?? null;
             $href = $WEB . '/events/' . $id;
           ?>
