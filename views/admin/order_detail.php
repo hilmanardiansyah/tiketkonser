@@ -286,3 +286,4 @@ require __DIR__ . '/../layout/header.php';
 </div>
 
 <?php require __DIR__ . '/../layout/footer.php'; ?>
+
