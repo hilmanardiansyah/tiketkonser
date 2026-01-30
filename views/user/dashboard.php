@@ -1,5 +1,5 @@
 <?php
-
+require_once __DIR__ . '/../_init.php';
 $u = require_login();
 $pdo = db();
 
@@ -18,6 +18,7 @@ $st = $pdo->prepare("
     o.status,
     o.order_date,
     MIN(e.title) AS event_name,
+    MIN(e.poster_file) AS poster_file,
     MIN(e.poster_url) AS poster_url,
     MIN(e.event_date) AS event_date,
     MIN(e.venue) AS venue,
@@ -35,7 +36,7 @@ $st->execute([$u['id']]);
 $last_orders = $st->fetchAll(PDO::FETCH_ASSOC);
 
 $recommended = $pdo->query("
-  SELECT id, title, poster_url, event_date, venue, city
+  SELECT id, title, poster_file, poster_url, event_date, venue, city
   FROM events
   WHERE status = 'ACTIVE'
   ORDER BY event_date ASC, id ASC
@@ -84,7 +85,7 @@ require __DIR__ . '/../layout/header.php';
               <div class="col-md-4">
                 <div class="event-card">
                   <div class="event-card__img">
-                    <img src="<?= e(img_src($o['poster_url'] ?? '')) ?>" alt="">
+                    <img src="<?= e(img_src($o['poster_file'] ?? $o['poster_url'] ?? '')) ?>" alt="">
                   </div>
                   <div class="event-card__body">
                     <div class="event-card__title"><?= e($o['event_name'] ?? '-') ?></div>
@@ -117,12 +118,12 @@ require __DIR__ . '/../layout/header.php';
               <div class="col-md-4">
                 <div class="event-card">
                   <div class="event-card__img">
-                    <img src="<?= e(img_src($ev['poster_url'] ?? '')) ?>" alt="">
+                    <img src="<?= e(img_src($ev['poster_file'] ?? $ev['poster_url'] ?? '')) ?>" alt="">
                   </div>
                   <div class="event-card__body">
                     <div class="event-card__title"><?= e($ev['title'] ?? '-') ?></div>
                     <div class="event-card__meta"><?= e($dateTxt) ?> • <?= e($location) ?></div>
-                    <a class="btn btn-primary btn-sm w-100 rounded-pill mt-3" href="buy_process.php?event_id=<?= (int)$ev['id'] ?>">Beli Tiket</a>
+                    <a class="btn btn-primary btn-sm w-100 rounded-pill mt-3" href="<?= e(BASE_URL . '/public/events/' . (int)$ev['id']) ?>">Beli Tiket</a>
                   </div>
                 </div>
               </div>

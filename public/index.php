@@ -196,6 +196,12 @@ try {
     render('admin/tickets'); // views/admin/tickets.php
   }
 
+  // Compatibility: /admin/events/tickets.php -> /admin/tickets
+  if (($method === 'GET' || $method === 'POST') && $path === '/admin/events/tickets.php') {
+    $qs = $_SERVER['QUERY_STRING'] ?? '';
+    redirect_to(BASE_URL . '/public/admin/tickets' . ($qs ? ('?' . $qs) : ''));
+  }
+
   if (($method === 'GET' || $method === 'POST') && ($path === '/admin/orders' || $path === '/admin/orders.php')) {
     require_admin();
     render('admin/orders'); // views/admin/orders.php

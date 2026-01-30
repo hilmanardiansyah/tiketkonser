@@ -58,7 +58,12 @@ function pick_list(?array $res): array {
   return is_array($res) ? $res : [];
 }
 
-$API_EVENT = $WEB . '/api/events/' . $id;
+// Build absolute URL for server-side API calls
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$API_BASE = $protocol . '://' . $host . $WEB;
+
+$API_EVENT = $API_BASE . '/api/events/' . $id;
 $API_TT    = $WEB . '/api/events/' . $id . '/ticket-types';
 $API_LIST  = $WEB . '/api/events';
 $API_ORDER = $WEB . '/api/orders';
@@ -80,7 +85,7 @@ $venue = (string)($event['venue'] ?? '');
 $date  = (string)($event['event_date'] ?? $event['date'] ?? '');
 $timeS = (string)($event['start_time'] ?? '');
 $timeE = (string)($event['end_time'] ?? '');
-$poster = (string)($event['poster_url'] ?? $event['poster'] ?? '');
+$poster = (string)($event['poster_file'] ?? $event['poster_url'] ?? $event['poster'] ?? '');
 
 $u = function_exists('current_user') ? current_user() : null;
 $isLogged = $u ? true : false;
@@ -398,7 +403,7 @@ $isLogged = $u ? true : false;
         const city = safe(ev.city ?? '');
         const venue = safe(ev.venue ?? '');
         const date = safe(ev.event_date ?? ev.date ?? '');
-        const poster = safe(ev.poster_url ?? ev.poster ?? '');
+        const poster = safe(ev.poster_file ?? ev.poster_url ?? ev.poster ?? '');
         const meta = [city, venue, date].filter(Boolean).join(' • ') || '—';
         const href = `${WEB}/events/${id}`;
 
